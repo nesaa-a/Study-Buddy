@@ -1,42 +1,25 @@
-/* Study Buddy App Styles */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-}
-
-.app {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.container {
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  padding: 40px;
+/* Upload Form Styles */
+.upload-form-container {
   max-width: 800px;
-  width: 100%;
+  margin: 0 auto;
+}
+
+.upload-card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 30px;
   text-align: center;
 }
 
-h1 {
+.upload-card h2 {
   color: #333;
-  font-size: 2.5rem;
+  font-size: 2rem;
   margin-bottom: 10px;
   font-weight: 700;
 }
 
-.subtitle {
+.upload-subtitle {
   color: #666;
   font-size: 1.1rem;
   margin-bottom: 30px;
@@ -116,11 +99,11 @@ h1 {
   border: 1px solid #e9ecef;
 }
 
-.result-section h2 {
+.result-section h3 {
   color: #333;
   margin-bottom: 20px;
   text-align: center;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
 }
 
 .file-info {
@@ -141,10 +124,10 @@ h1 {
   border-left: 4px solid #4facfe;
 }
 
-.summary-container h3 {
+.summary-container h4 {
   color: #333;
   margin-bottom: 15px;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
 }
 
 .summary-text {
@@ -157,71 +140,25 @@ h1 {
   border: 1px solid #e1e5f2;
 }
 
-.original-text-container {
-  background: white;
-  padding: 20px;
+.success-message {
+  background: #d4edda;
+  color: #155724;
+  padding: 15px;
   border-radius: 10px;
   border-left: 4px solid #28a745;
-}
-
-.original-text-container h3 {
-  color: #333;
-  margin-bottom: 15px;
-  font-size: 1.3rem;
-}
-
-.original-text {
-  line-height: 1.6;
-  color: #666;
-  font-size: 0.9rem;
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-/* Loading Styles */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  text-align: center;
-}
-
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #667eea;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-container p {
-  color: #666;
-  font-size: 1.1rem;
   font-weight: 500;
+  text-align: center;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .container {
+  .upload-card {
     padding: 20px;
     margin: 10px;
   }
   
-  h1 {
-    font-size: 2rem;
+  .upload-card h2 {
+    font-size: 1.5rem;
   }
   
   .file-input-label,
