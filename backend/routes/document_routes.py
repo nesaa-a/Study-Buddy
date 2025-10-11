@@ -11,9 +11,9 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Upload file
 @document_bp.route("/upload", methods=["POST"])
-@verify_token
+@verify_token()
 def upload_file():
-    user_id = request.form.get("user_id")
+    """Upload document - requires authentication"""
     if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
     
@@ -25,12 +25,15 @@ def upload_file():
     file_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(file_path)
     
-    save_document(user_id, filename, file_path)
+    # Use authenticated user's ID
+    save_document(request.user_id, filename, file_path)
     
     return jsonify({"message": "File uploaded successfully!", "file": filename})
 
-# Get all documents for a user
-@document_bp.route("/user/<int:user_id>/documents", methods=["GET"])
-def get_documents(user_id):
-    docs = get_user_documents(user_id)
-    return jsonify(docs)
+# Get all documents for authenticated user
+@document_bp.route("/my-documents", methods=["GET"])
+@verify_token()
+def get_my_documents():
+    """Get user's documents - requires authentication"""
+    docs = get_user_documents(request.user_id)
+    return jsonify({"documents": docs})

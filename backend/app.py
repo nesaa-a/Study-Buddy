@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
+from backend.config.env_config import Config
 from backend.routes.auth_routes import auth_bp
 from backend.routes.document_routes import document_bp
 from backend.routes.quiz_routes import quiz_bp
@@ -8,7 +9,10 @@ from backend.routes.user_routes import user_bp
 app = Flask(__name__)
 CORS(app)
 
-# Regjistrimi i routes
+# Load configuration
+app.config.from_object(Config)
+
+# Register blueprints
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(document_bp, url_prefix="/api/documents")
 app.register_blueprint(quiz_bp, url_prefix="/api/quiz")
@@ -18,5 +22,13 @@ app.register_blueprint(user_bp, url_prefix="/api/users")
 def home():
     return {"message": "Study Buddy API is running!"}
 
+@app.errorhandler(404)
+def not_found(error):
+    return {"error": "Endpoint not found"}, 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return {"error": "Internal server error"}, 500
+
 if __name__ == "__main__":
-    app.run(debug=True, port=5050)
+    app.run(debug=Config.FLASK_DEBUG, port=5050)

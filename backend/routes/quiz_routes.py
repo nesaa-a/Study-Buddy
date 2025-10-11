@@ -4,26 +4,46 @@ from backend.utils.jwt_utils import verify_token
 # Krijo Blueprint për quiz routes
 quiz_bp = Blueprint('quiz', __name__)
 
-# Test route për me u siguru që funksionon
+# Test route to verify authentication
 @quiz_bp.route('/test', methods=['GET'])
-@verify_token
+@verify_token()
 def test_quiz():
-    return jsonify({"message": "Quiz routes working!"})
+    """Test route - requires authentication"""
+    return jsonify({"message": "Quiz routes working!", "user_id": request.user_id})
 
-
-# Route për gjenerimin e pyetjeve të quizzit (placeholder)
+# Generate quiz questions
 @quiz_bp.route('/generate', methods=['POST'])
+@verify_token()
 def generate_quiz():
+    """Generate quiz from document text - requires authentication"""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+        
     document_text = data.get('text', '')
+    if not document_text:
+        return jsonify({"error": "Document text is required"}), 400
 
-    # Në këtë version bazik, thjesht kthejmë disa pyetje të thjeshta testuese
+    # Sample questions (placeholder for actual quiz generation)
     sample_questions = [
-        {"question": "What is the main topic of the document?", "options": ["A", "B", "C", "D"], "answer": "A"},
-        {"question": "Summarize the key idea in one sentence.", "options": [], "answer": None}
+        {
+            "id": 1,
+            "question": "What is the main topic of the document?", 
+            "options": ["Option A", "Option B", "Option C", "Option D"], 
+            "correct_answer": 0,
+            "type": "multiple_choice"
+        },
+        {
+            "id": 2,
+            "question": "Summarize the key idea in one sentence.", 
+            "options": [], 
+            "correct_answer": None,
+            "type": "open_ended"
+        }
     ]
 
     return jsonify({
         "message": "Quiz generated successfully",
-        "questions": sample_questions
+        "questions": sample_questions,
+        "user_id": request.user_id
     })
