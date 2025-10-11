@@ -1,11 +1,13 @@
 from flask import Blueprint, request, jsonify
 from backend.models.user_model import create_user, get_user_by_email
 import hashlib
+from backend.utils.jwt_utils import verify_token
 
 user_bp = Blueprint("user_bp", __name__)
 
 # REGISTER
 @user_bp.route("/register", methods=["POST"])
+@verify_token
 def register():
     data = request.get_json()
     name = data.get("name")

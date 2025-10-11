@@ -8,7 +8,6 @@ from backend.routes.user_routes import user_bp
 app = Flask(__name__)
 CORS(app)
 
-
 # Regjistrimi i routes
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(document_bp, url_prefix="/api/documents")

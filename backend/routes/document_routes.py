@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
 import os
 from backend.models.document_model import save_document, get_user_documents
+from backend.utils.jwt_utils import verify_token
 
 document_bp = Blueprint("document_bp", __name__)
 
@@ -10,6 +11,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Upload file
 @document_bp.route("/upload", methods=["POST"])
+@verify_token
 def upload_file():
     user_id = request.form.get("user_id")
     if "file" not in request.files:

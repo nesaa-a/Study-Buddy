@@ -1,10 +1,12 @@
 from flask import Blueprint, jsonify, request
+from backend.utils.jwt_utils import verify_token
 
 # Krijo Blueprint për quiz routes
 quiz_bp = Blueprint('quiz', __name__)
 
 # Test route për me u siguru që funksionon
 @quiz_bp.route('/test', methods=['GET'])
+@verify_token
 def test_quiz():
     return jsonify({"message": "Quiz routes working!"})
 
