@@ -41,20 +41,24 @@ const DocumentList = ({ onDocumentSelect, onGenerateQuiz, onStartChat }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (filename) => {
-    const extension = filename.split('.').pop().toLowerCase();
-    switch (extension) {
-      case 'pdf':
-        return <FileText className="h-6 w-6 text-red-500" />;
-      case 'docx':
-        return <FileText className="h-6 w-6 text-blue-500" />;
-      case 'txt':
-        return <FileText className="h-6 w-6 text-gray-500" />;
-      default:
-        return <FileText className="h-6 w-6 text-gray-400" />;
-    }
-  };
+ const getFileIcon = (filename) => {
+  if (!filename || typeof filename !== "string") {
+    return <FileText className="h-6 w-6 text-gray-400" />; // default icon
+  }
 
+  const extension = filename.split('.').pop().toLowerCase();
+  switch (extension) {
+    case 'pdf':
+      return <FileText className="h-6 w-6 text-red-500" />;
+    case 'docx':
+    case 'doc':
+      return <FileText className="h-6 w-6 text-blue-500" />;
+    case 'txt':
+      return <FileText className="h-6 w-6 text-gray-500" />;
+    default:
+      return <FileText className="h-6 w-6 text-gray-400" />;
+  }
+};
   const handleDocumentClick = (document) => {
     setSelectedDocument(document);
     if (onDocumentSelect) {
