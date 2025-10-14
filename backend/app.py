@@ -5,6 +5,7 @@ from backend.routes.auth_routes import auth_bp
 from backend.routes.document_routes import document_bp
 from backend.routes.quiz_routes import quiz_bp
 from backend.routes.user_routes import user_bp
+from backend.routes.summary_routes import summary_bp
 
 app = Flask(__name__)
 CORS(app)
@@ -17,6 +18,7 @@ app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(document_bp, url_prefix="/api/documents")
 app.register_blueprint(quiz_bp, url_prefix="/api/quiz")
 app.register_blueprint(user_bp, url_prefix="/api/users")
+app.register_blueprint(summary_bp, url_prefix="/api/summary")
 
 @app.route("/")
 def home():

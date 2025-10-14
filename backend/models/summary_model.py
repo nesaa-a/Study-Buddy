@@ -3,7 +3,10 @@ from backend.config.db_config import get_db_connection
 def save_summary(document_id, summary_text):
     connection = get_db_connection()
     cursor = connection.cursor()
-    query = "INSERT INTO summaries (document_id, summary_text) VALUES (%s, %s)"
+    query = """
+        INSERT INTO summaries (document_id, summary_text)
+        VALUES (%s, %s)
+    """
     cursor.execute(query, (document_id, summary_text))
     connection.commit()
     cursor.close()

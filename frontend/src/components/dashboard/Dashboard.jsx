@@ -70,10 +70,23 @@ const Dashboard = () => {
           <SummaryDisplay
             document={selectedDocument}
             summary={selectedDocument?.summary}
-            onGenerateSummary={(docId, length) => {
-              // Handle summary generation
-              console.log('Generate summary for:', docId, length);
-            }}
+            onGenerateSummary={async (docId, length) => {
+  try {
+    const res = await fetch("http://127.0.0.1:5050/api/summary/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({ document_id: docId, length }),
+    });
+    const data = await res.json();
+    console.log("Summary:", data.summary);
+    alert("Summary generated:\n\n" + data.summary);
+  } catch (err) {
+    console.error("Error generating summary:", err);
+  }
+}}
           />
         );
       case 'quiz':
