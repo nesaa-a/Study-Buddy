@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [documents, setDocuments] = useState([]);
+  const [generatedSummary, setGeneratedSummary] = useState("");
 
   const handleDocumentSelect = (document) => {
     setSelectedDocument(document);
@@ -66,11 +67,11 @@ const Dashboard = () => {
           />
         );
       case 'summary':
-        return (
-          <SummaryDisplay
-            document={selectedDocument}
-            summary={selectedDocument?.summary}
-            onGenerateSummary={async (docId, length) => {
+  return (
+    <SummaryDisplay
+      document={selectedDocument}
+      summary={generatedSummary}
+      onGenerateSummary={async (docId, length) => {
   try {
     const res = await fetch("http://127.0.0.1:5050/api/summary/generate", {
       method: "POST",
@@ -80,13 +81,26 @@ const Dashboard = () => {
       },
       body: JSON.stringify({ document_id: docId, length }),
     });
+
     const data = await res.json();
-    console.log("Summary:", data.summary);
-    alert("Summary generated:\n\n" + data.summary);
+    console.log("📩 Summary API response:", data);
+
+    if (data.summary) {
+      // ✅ Update selected document state so SummaryDisplay re-renders
+      setSelectedDocument(prev => ({
+        ...prev,
+        summary: data.summary,
+      }));
+
+      console.log("✅ Summary generated successfully:", data.summary);
+    } else {
+      console.error("⚠️ No summary found:", data.error);
+    }
   } catch (err) {
-    console.error("Error generating summary:", err);
+    console.error("❌ Error generating summary:", err);
   }
 }}
+
           />
         );
       case 'quiz':
