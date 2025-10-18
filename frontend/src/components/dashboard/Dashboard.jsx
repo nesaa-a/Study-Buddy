@@ -16,21 +16,56 @@ import DocumentList from '../documents/DocumentList';
 import SummaryDisplay from '../ai/SummaryDisplay';
 import QuizGenerator from '../quiz/QuizGenerator';
 import AIChat from '../chat/AIChat';
+import { summaryAPI, documentsAPI } from '../../services/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [documents, setDocuments] = useState([]);
-  const [generatedSummary, setGeneratedSummary] = useState("");
+  const [generatedSummary, setGeneratedSummary] = useState('');
+  const [showLengthModal, setShowLengthModal] = useState(false);
+  const [pendingDocForSummary, setPendingDocForSummary] = useState(null);
 
   const handleDocumentSelect = (document) => {
     setSelectedDocument(document);
   };
 
-  const handleUploadSuccess = (uploadedFile) => {
-    // Refresh documents list or add to state
-    setDocuments(prev => [uploadedFile, ...prev]);
+  const handleUploadSuccess = async (uploadedFile) => {
+    // Refresh server documents to obtain real IDs
+    try {
+      const response = await documentsAPI.getMyDocuments();
+      const serverDocs = response.documents || [];
+      setDocuments(serverDocs);
+
+      // Try to find the just-uploaded document by filename; fallback to most recent
+      const matched = serverDocs.find((d) => d.filename === uploadedFile.name) || serverDocs[0] || null;
+      if (!matched) return;
+
+      setSelectedDocument(matched);
+      setActiveTab('summary');
+
+      // Open modal to choose length
+      setPendingDocForSummary(matched);
+      setShowLengthModal(true);
+    } catch (e) {
+      console.error('Post-upload flow failed:', e);
+    }
+  };
+
+  const handleGenerateWithLength = async (length) => {
+    try {
+      if (!pendingDocForSummary) return;
+      const data = await summaryAPI.generate(pendingDocForSummary.id, length);
+      if (data.summary) {
+        setGeneratedSummary(data.summary);
+      }
+    } catch (e) {
+      console.error('Summary generation failed:', e);
+    } finally {
+      setShowLengthModal(false);
+      setPendingDocForSummary(null);
+    }
   };
 
   const handleGenerateQuiz = (document) => {
@@ -73,34 +108,24 @@ const Dashboard = () => {
       summary={generatedSummary}
       onGenerateSummary={async (docId, length) => {
   try {
-    const res = await fetch("http://127.0.0.1:5050/api/summary/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({ document_id: docId, length }),
-    });
+    if (!selectedDocument?.content) {
+      alert("❗ Document text not loaded. Make sure the document includes text content.");
+      return;
+    }
 
-    const data = await res.json();
-    console.log("📩 Summary API response:", data);
+    const data = await summaryAPI.generate(docId, selectedDocument.content, length);
+    console.log("📄 Summary API response:", data);
 
     if (data.summary) {
-      // ✅ Update selected document state so SummaryDisplay re-renders
-      setSelectedDocument(prev => ({
-        ...prev,
-        summary: data.summary,
-      }));
-
-      console.log("✅ Summary generated successfully:", data.summary);
+      setGeneratedSummary(data.summary);
     } else {
-      console.error("⚠️ No summary found:", data.error);
+      alert("⚠️ No summary found:\n\n" + (data.error || "Unknown error"));
     }
   } catch (err) {
     console.error("❌ Error generating summary:", err);
+    alert("Error connecting to backend. Check console for details.");
   }
 }}
-
           />
         );
       case 'quiz':
@@ -151,6 +176,25 @@ const Dashboard = () => {
         <div className="animate-fade-in">
           {renderTabContent()}
         </div>
+
+        {/* Summary Length Modal */}
+        {showLengthModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40" onClick={() => { setShowLengthModal(false); setPendingDocForSummary(null); }}></div>
+            <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Choose summary length</h3>
+              <p className="text-sm text-gray-600 mb-4">Select how detailed you want the AI summary to be.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                <button onClick={() => handleGenerateWithLength('short')} className="btn-secondary">Short</button>
+                <button onClick={() => handleGenerateWithLength('medium')} className="btn-primary">Medium</button>
+                <button onClick={() => handleGenerateWithLength('long')} className="btn-secondary">Long</button>
+              </div>
+              <div className="flex justify-end">
+                <button onClick={() => { setShowLengthModal(false); setPendingDocForSummary(null); }} className="btn-secondary">Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

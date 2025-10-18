@@ -19,8 +19,8 @@ const QuizGenerator = ({ document, onQuizGenerated }) => {
 
     setIsGenerating(true);
     try {
-      // For now, we'll use a placeholder since the backend might not have the actual document text
-      const response = await quizAPI.generate("Sample document text for quiz generation");
+      // Generate quiz based on selected document id (server extracts text)
+      const response = await quizAPI.generateFromDocument(document.id);
       setQuiz(response.questions);
       setCurrentQuestion(0);
       setAnswers({});

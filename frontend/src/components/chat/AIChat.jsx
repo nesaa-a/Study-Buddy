@@ -48,13 +48,11 @@ const AIChat = ({ document, onClose }) => {
     setIsTyping(true);
 
     try {
-      // Simulate AI response (replace with actual API call when backend is ready)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      const resp = await chatAPI.sendMessage(userMessage.content, document?.id);
       const botResponse = {
         id: Date.now() + 1,
         type: 'bot',
-        content: generateMockResponse(inputMessage),
+        content: resp.message || 'Okay! (no message provided)',
         timestamp: new Date(),
       };
 
@@ -76,18 +74,6 @@ const AIChat = ({ document, onClose }) => {
     }
   };
 
-  const generateMockResponse = (userInput) => {
-    const responses = [
-      "That's a great question! Based on the document content, I can explain that...",
-      "Let me break that down for you. The document mentions several key points...",
-      "I understand you're asking about this concept. Here's what the document says...",
-      "That's an interesting point! The document covers this topic in detail...",
-      "Great question! Let me help you understand this better based on the content...",
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)] + 
-           " This is a mock response. The actual AI chat functionality will be implemented when the backend chat endpoint is ready.";
-  };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

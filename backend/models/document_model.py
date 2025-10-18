@@ -1,24 +1,23 @@
 import os
 from backend.config.db_config import get_db_connection
 
-def save_document(user_id, filename, file_path):
+# 🧠 Save document with extracted content
+def save_document(user_id, filename, file_path, content):
     connection = get_db_connection()
     cursor = connection.cursor()
 
-    # calculate file size
-    file_size = os.path.getsize(file_path)
-
-    # Insert with uploaded_at
+    # Insert with uploaded_at + content
     query = """
-        INSERT INTO documents (user_id, title, file_path, uploaded_at)
-        VALUES (%s, %s, %s, NOW())
+        INSERT INTO documents (user_id, title, file_path, content, uploaded_at)
+        VALUES (%s, %s, %s, %s, NOW())
     """
-    cursor.execute(query, (user_id, filename, file_path))
+    cursor.execute(query, (user_id, filename, file_path, content))
     connection.commit()
     cursor.close()
     connection.close()
 
 
+# 📄 Get all documents for user
 def get_user_documents(user_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
@@ -34,8 +33,23 @@ def get_user_documents(user_id):
     cursor.close()
     connection.close()
 
-    # Add a default file_size placeholder for frontend
     for doc in docs:
-        doc["file_size"] = None  # or 0 if you prefer
+        doc["file_size"] = None  # optional placeholder
     return docs
 
+
+# 🧾 Get single document including text
+def get_document_by_id(document_id, user_id):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    query = """
+        SELECT id, title AS filename, file_path, content, uploaded_at AS upload_date
+        FROM documents
+        WHERE id = %s AND user_id = %s
+    """
+    cursor.execute(query, (document_id, user_id))
+    doc = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    return doc

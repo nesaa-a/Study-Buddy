@@ -116,10 +116,28 @@ export const documentsAPI = {
   },
 };
 
+// Summary API
+export const summaryAPI = {
+  generate: async (documentId, text, length = "medium") => {
+    const response = await api.post("/summary/generate", {
+      document_id: documentId,
+      text,            // ✅ send text
+      length,
+    });
+    return response.data;
+  },
+};
+
+
 // Quiz API
 export const quizAPI = {
   generate: async (documentText) => {
     const response = await api.post('/quiz/generate', { text: documentText });
+    return response.data;
+  },
+
+  generateFromDocument: async (documentId) => {
+    const response = await api.post('/quiz/generate', { document_id: documentId });
     return response.data;
   },
 
