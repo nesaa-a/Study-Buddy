@@ -27,8 +27,15 @@ const Dashboard = () => {
   const [showLengthModal, setShowLengthModal] = useState(false);
   const [pendingDocForSummary, setPendingDocForSummary] = useState(null);
 
-  const handleDocumentSelect = (document) => {
-    setSelectedDocument(document);
+  const handleDocumentSelect = async (document) => {
+    try {
+      // Always fetch full document including text content
+      const fullDoc = await documentsAPI.getDocument(document.id);
+      setSelectedDocument(fullDoc);
+    } catch (e) {
+      console.error('Failed to fetch document details:', e);
+      setSelectedDocument(document); // fallback so UI still updates
+    }
   };
 
   const handleUploadSuccess = async (uploadedFile) => {
@@ -42,7 +49,13 @@ const Dashboard = () => {
       const matched = serverDocs.find((d) => d.filename === uploadedFile.name) || serverDocs[0] || null;
       if (!matched) return;
 
-      setSelectedDocument(matched);
+      // Fetch full document details (with content)
+      try {
+        const fullDoc = await documentsAPI.getDocument(matched.id);
+        setSelectedDocument(fullDoc);
+      } catch {
+        setSelectedDocument(matched);
+      }
       setActiveTab('summary');
 
       // Open modal to choose length
@@ -56,7 +69,23 @@ const Dashboard = () => {
   const handleGenerateWithLength = async (length) => {
     try {
       if (!pendingDocForSummary) return;
-      const data = await summaryAPI.generate(pendingDocForSummary.id, length);
+      // Ensure we have text content
+      let text = pendingDocForSummary.content;
+      if (!text) {
+        try {
+          const fullDoc = await documentsAPI.getDocument(pendingDocForSummary.id);
+          text = fullDoc.content;
+        } catch (e) {
+          console.error('Unable to load document content for summary:', e);
+        }
+      }
+
+      if (!text) {
+        console.warn('No text content available for summary.');
+        return;
+      }
+
+      const data = await summaryAPI.generate(pendingDocForSummary.id, text, length);
       if (data.summary) {
         setGeneratedSummary(data.summary);
       }
@@ -102,30 +131,41 @@ const Dashboard = () => {
           />
         );
       case 'summary':
-  return (
-    <SummaryDisplay
-      document={selectedDocument}
-      summary={generatedSummary}
-      onGenerateSummary={async (docId, length) => {
-  try {
-    if (!selectedDocument?.content) {
-      alert("❗ Document text not loaded. Make sure the document includes text content.");
-      return;
-    }
+        return (
+          <SummaryDisplay
+            document={selectedDocument}
+            summary={generatedSummary}
+            onGenerateSummary={async (docId, length) => {
+              try {
+                // Ensure we have text; fetch full doc if needed
+                let text = selectedDocument?.content;
+                if (!text) {
+                  try {
+                    const fullDoc = await documentsAPI.getDocument(docId);
+                    text = fullDoc?.content;
+                  } catch (e) {
+                    console.error('Failed to fetch full document for summary:', e);
+                  }
+                }
 
-    const data = await summaryAPI.generate(docId, selectedDocument.content, length);
-    console.log("📄 Summary API response:", data);
+                if (!text) {
+                  alert("❗ Document text not loaded. Make sure the document includes text content.");
+                  return;
+                }
 
-    if (data.summary) {
-      setGeneratedSummary(data.summary);
-    } else {
-      alert("⚠️ No summary found:\n\n" + (data.error || "Unknown error"));
-    }
-  } catch (err) {
-    console.error("❌ Error generating summary:", err);
-    alert("Error connecting to backend. Check console for details.");
-  }
-}}
+                const data = await summaryAPI.generate(docId, text, length);
+                console.log("📄 Summary API response:", data);
+
+                if (data.summary) {
+                  setGeneratedSummary(data.summary);
+                } else {
+                  alert("⚠️ No summary found:\n\n" + (data.error || "Unknown error"));
+                }
+              } catch (err) {
+                console.error("❌ Error generating summary:", err);
+                alert("Error connecting to backend. Check console for details.");
+              }
+            }}
           />
         );
       case 'quiz':

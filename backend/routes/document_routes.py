@@ -3,11 +3,13 @@ from werkzeug.utils import secure_filename
 import os
 
 from backend.models.document_model import save_document, get_user_documents, get_document_by_id
+from backend.services.semantic_memory import build_or_update_user_index
 from backend.utils.jwt_utils import verify_token
 
 # External libraries for reading files
 from PyPDF2 import PdfReader
 import docx2txt
+import pdfplumber
 
 # Initialize Blueprint
 document_bp = Blueprint("document_bp", __name__)
@@ -22,9 +24,17 @@ def extract_text_from_file(file_path):
     text = ""
     try:
         if file_path.endswith(".pdf"):
+            # First try PyPDF2
             reader = PdfReader(file_path)
             for page in reader.pages:
-                text += page.extract_text() or ""
+                text += (page.extract_text() or "")
+            # If PyPDF2 yields too little text, fallback to pdfplumber for better quality
+            if len((text or '').strip()) < 400:
+                try:
+                    with pdfplumber.open(file_path) as pdf:
+                        text = " ".join([p.extract_text() or "" for p in pdf.pages])
+                except Exception as _:
+                    pass
         elif file_path.endswith(".docx"):
             text = docx2txt.process(file_path)
         elif file_path.endswith(".txt"):
@@ -56,6 +66,14 @@ def upload_file():
 
     # ✅ Save document in DB (linked to authenticated user)
     save_document(request.user_id, filename, file_path, text_content)
+
+    # 🔎 Update semantic index for this user (best-effort)
+    try:
+        def _fetch(doc_id, user_id):
+            return get_document_by_id(doc_id, user_id)
+        build_or_update_user_index(request.user_id, _fetch)
+    except Exception as _:
+        pass
 
     return jsonify({"message": "File uploaded successfully!", "file": filename})
 

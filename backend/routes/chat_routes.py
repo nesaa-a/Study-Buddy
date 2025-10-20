@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from backend.utils.jwt_utils import verify_token
 from backend.models.document_model import get_document_by_id
 from backend.services.file_reader import read_text_from_file
+from backend.services.langchain_ai import chat_with_context
+from backend.services.semantic_memory import retrieve_context
 
 chat_bp = Blueprint('chat_bp', __name__)
 
@@ -17,22 +19,22 @@ def chat_message():
 
     context_text = None
     if document_id:
-        doc = get_document_by_id(document_id)
+        # fetch only if authorized
+        doc = get_document_by_id(document_id, request.user_id)
         if doc:
             context_text = read_text_from_file(doc.get('file_path'))
 
-    # Minimal heuristic response using context availability
-    if context_text:
-        reply = (
-            "I reviewed your document and here is a brief tip based on it: "
-            "Focus on the main topics and definitions early in the text. "
-            "Ask a specific question about a section or concept for a deeper answer."
-        )
-    else:
-        reply = (
-            "I couldn't access the document content right now, but I'm here to help. "
-            "Please ask a specific question and, if possible, try again with a selected document."
-        )
+    # Retrieve semantic memory context (top-k chunks) using user's index
+    try:
+        topk_contexts = retrieve_context(request.user_id, message, k=3)
+        if topk_contexts:
+            extra = "\n\n".join(topk_contexts)
+            context_text = (context_text + "\n\n" + extra) if context_text else extra
+    except Exception:
+        pass
+
+    # Generate LLM-based reply (falls back gracefully if no API key)
+    reply = chat_with_context(message, context_text)
 
     return jsonify({
         "message": reply,

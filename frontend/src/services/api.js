@@ -114,16 +114,27 @@ export const documentsAPI = {
     const response = await api.get('/documents/my-documents');
     return response.data;
   },
+  
+  getDocument: async (documentId) => {
+    const response = await api.get(`/documents/${documentId}`);
+    return response.data;
+  },
 };
 
 // Summary API
 export const summaryAPI = {
   generate: async (documentId, text, length = "medium") => {
-    const response = await api.post("/summary/generate", {
-      document_id: documentId,
-      text,            // ✅ send text
-      length,
-    });
+    const response = await api.post(
+      "/summary/generate",
+      {
+        document_id: documentId,
+        text,            // ✅ send text
+        length,
+      },
+      {
+        timeout: 300000, // Allow up to 5 minutes for cold-start/model download
+      }
+    );
     return response.data;
   },
 };
