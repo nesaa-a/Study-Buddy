@@ -21,6 +21,9 @@ def generate_quiz():
     """Generate quiz from document text - requires authentication"""
     try:
         data = request.get_json() or {}
+        num_questions = int(data.get('num_questions') or 10)
+        if num_questions <= 0:
+            num_questions = 10
 
         # Accept either raw text or a document_id; prefer document_id if provided
         document_id = data.get('document_id')
@@ -43,7 +46,7 @@ def generate_quiz():
 
         # If there is still no text (no document_id and no text), proceed with generic questions
         if document_text:
-            sample_questions = generate_quiz_from_text_langchain(document_text)
+            sample_questions = generate_quiz_from_text_langchain(document_text, num_questions=num_questions)
         else:
             # Generic fallback
             sample_questions = [

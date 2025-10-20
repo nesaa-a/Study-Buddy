@@ -147,8 +147,8 @@ export const quizAPI = {
     return response.data;
   },
 
-  generateFromDocument: async (documentId) => {
-    const response = await api.post('/quiz/generate', { document_id: documentId });
+  generateFromDocument: async (documentId, numQuestions = 10) => {
+    const response = await api.post('/quiz/generate', { document_id: documentId, num_questions: numQuestions });
     return response.data;
   },
 
@@ -163,6 +163,22 @@ export const chatAPI = {
   sendMessage: async (message, documentId) => {
     // This will be implemented when the backend chat endpoint is ready
     const response = await api.post('/chat/message', { message, document_id: documentId });
+    return response.data;
+  },
+};
+
+// Study Time API
+export const studyAPI = {
+  heartbeat: async () => {
+    try {
+      const response = await api.post('/study/heartbeat');
+      return response.data;
+    } catch (e) {
+      return { ok: false };
+    }
+  },
+  stats: async () => {
+    const response = await api.get('/study/stats');
     return response.data;
   },
 };

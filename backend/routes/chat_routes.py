@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from backend.utils.jwt_utils import verify_token
 from backend.models.document_model import get_document_by_id
 from backend.services.file_reader import read_text_from_file
-from backend.services.langchain_ai import chat_with_context
+from backend.services.langchain_ai import chat_with_context, get_chat_provider
 from backend.services.semantic_memory import retrieve_context
 
 chat_bp = Blueprint('chat_bp', __name__)
@@ -35,12 +35,14 @@ def chat_message():
 
     # Generate LLM-based reply (falls back gracefully if no API key)
     reply = chat_with_context(message, context_text)
+    provider = get_chat_provider()
 
     return jsonify({
         "message": reply,
         "echo": message,
         "document_id": document_id,
-        "has_context": bool(context_text)
+        "has_context": bool(context_text),
+        "provider": provider
     }), 200
 
 

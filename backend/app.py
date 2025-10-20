@@ -7,6 +7,7 @@ from backend.routes.quiz_routes import quiz_bp
 from backend.routes.user_routes import user_bp
 from backend.routes.summary_routes import summary_bp
 from backend.routes.chat_routes import chat_bp
+from backend.routes.study_routes import study_bp
 
 app = Flask(__name__)
 CORS(app)
@@ -21,6 +22,7 @@ app.register_blueprint(quiz_bp, url_prefix="/api/quiz")
 app.register_blueprint(user_bp, url_prefix="/api/users")
 app.register_blueprint(summary_bp, url_prefix="/api/summary")
 app.register_blueprint(chat_bp, url_prefix="/api/chat")
+app.register_blueprint(study_bp, url_prefix="/api/study")
 
 @app.route("/")
 def home():

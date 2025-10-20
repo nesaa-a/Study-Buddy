@@ -16,7 +16,7 @@ import DocumentList from '../documents/DocumentList';
 import SummaryDisplay from '../ai/SummaryDisplay';
 import QuizGenerator from '../quiz/QuizGenerator';
 import AIChat from '../chat/AIChat';
-import { summaryAPI, documentsAPI } from '../../services/api';
+import { summaryAPI, documentsAPI, studyAPI } from '../../services/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -26,6 +26,22 @@ const Dashboard = () => {
   const [generatedSummary, setGeneratedSummary] = useState('');
   const [showLengthModal, setShowLengthModal] = useState(false);
   const [pendingDocForSummary, setPendingDocForSummary] = useState(null);
+  const [studyStats, setStudyStats] = useState({ today_seconds: 0, week_seconds: 0, all_time_seconds: 0 });
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchStats = async () => {
+      try {
+        const s = await studyAPI.stats();
+        if (mounted && s && typeof s.today_seconds !== 'undefined') {
+          setStudyStats(s);
+        }
+      } catch {}
+    };
+    fetchStats();
+    const id = setInterval(fetchStats, 60000);
+    return () => { mounted = false; clearInterval(id); };
+  }, []);
 
   const handleDocumentSelect = async (document) => {
     try {
@@ -119,7 +135,7 @@ const Dashboard = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <OverviewTab user={user} documents={documents} />;
+        return <OverviewTab user={user} documents={documents} studyStats={studyStats} />;
       case 'upload':
         return <DocumentUpload onUploadSuccess={handleUploadSuccess} />;
       case 'documents':
@@ -241,7 +257,12 @@ const Dashboard = () => {
 };
 
 // Overview Tab Component
-const OverviewTab = ({ user, documents }) => {
+const OverviewTab = ({ user, documents, studyStats }) => {
+  const fmt = (sec) => {
+    const h = Math.floor((sec || 0) / 3600);
+    const m = Math.floor(((sec || 0) % 3600) / 60);
+    return `${h}h ${m}m`;
+  };
   const stats = [
     {
       name: 'Documents Uploaded',
@@ -266,7 +287,7 @@ const OverviewTab = ({ user, documents }) => {
     },
     {
       name: 'Study Time',
-      value: '0h 0m', // This would come from actual data
+      value: fmt(studyStats?.today_seconds),
       icon: Clock,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',

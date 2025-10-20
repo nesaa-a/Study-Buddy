@@ -17,6 +17,15 @@ def _load_chat_model():
         except Exception:
             return None
 
+
+def get_chat_provider() -> str:
+    """Return 'openai' if ChatOpenAI is available and key is set, else 'offline'."""
+    try:
+        llm = _load_chat_model()
+        return "openai" if llm is not None else "offline"
+    except Exception:
+        return "offline"
+
 def _extractive_answer(message: str, context: Optional[str]) -> str:
     """Compose a concise, grounded answer without calling an LLM.
     Strategy: split context into sentences, score by keyword overlap with the query,
@@ -82,13 +91,51 @@ def chat_with_context(message: str, context: Optional[str]) -> str:
 
 
 def generate_quiz_from_text_langchain(text: str, num_questions: int = 6) -> List[Dict]:
+    def _simple_mcq_from_text(t: str, n: int) -> List[Dict]:
+        import re, random
+        stems = [
+            "According to the document, which statement is true?",
+            "Which option is best supported by the document?",
+            "Which statement best reflects the document's content?",
+            "What conclusion is supported by the document?",
+        ]
+        # Extract sentences
+        sents = [s.strip() for s in re.split(r"(?<=[.!?])\s+|\n+", (t or "")) if len(s.strip()) > 20]
+        if not sents:
+            sents = [
+                "This document discusses key concepts and definitions.",
+                "It presents examples and main ideas.",
+                "It concludes with important takeaways.",
+                "It introduces important terminology and context.",
+            ]
+        # Deduplicate
+        seen = set(); uniq = []
+        for s in sents:
+            k = s.lower()
+            if k not in seen:
+                seen.add(k); uniq.append(s)
+        random.shuffle(uniq)
+        out = []
+        for i in range(max(1, n)):
+            correct = uniq[i % len(uniq)]
+            pool = [x for x in uniq if x != correct]
+            random.shuffle(pool)
+            distractors = (pool[:3] if len(pool) >= 3 else (pool + ["None of the above", "All of the above", "Not specified"]))[:3]
+            options = [correct] + distractors
+            random.shuffle(options)
+            correct_index = options.index(correct)
+            out.append({
+                "id": i+1,
+                "question": stems[i % len(stems)],
+                "options": options,
+                "correct_answer": correct_index,
+                "type": "multiple_choice",
+            })
+        return out
+
     llm = _load_chat_model()
     if llm is None:
-        # Simple fallback stub
-        return [
-            {"id": i+1, "question": f"Write a key fact from the document (item {i+1}).", "options": [], "correct_answer": None, "type": "open_ended"}
-            for i in range(num_questions)
-        ]
+        return _simple_mcq_from_text(text, num_questions)
     try:
         from langchain.prompts import ChatPromptTemplate
         tmpl = ChatPromptTemplate.from_messages([
@@ -100,7 +147,15 @@ def generate_quiz_from_text_langchain(text: str, num_questions: int = 6) -> List
         prompt = tmpl.format_messages(n=num_questions, doc=text[:12000])
         resp = llm.invoke(prompt)
         raw = resp.content.strip()
-        data = json.loads(raw)
+        # Try direct parse, then attempt to repair by extracting JSON array
+        try:
+            data = json.loads(raw)
+        except Exception:
+            import re
+            m = re.search(r"\[.*\]", raw, re.S)
+            if not m:
+                raise ValueError("No JSON array found in LLM output")
+            data = json.loads(m.group(0))
         out = []
         for i, q in enumerate(data):
             out.append({
@@ -110,8 +165,14 @@ def generate_quiz_from_text_langchain(text: str, num_questions: int = 6) -> List
                 "correct_answer": q.get("correct_index", 0),
                 "type": "multiple_choice",
             })
+        # If fewer than requested, pad with simple ones
+        if len(out) < num_questions:
+            extra = _simple_mcq_from_text(text, num_questions - len(out))
+            # Fix IDs to be continuous
+            for j, q in enumerate(extra, start=len(out)+1):
+                q["id"] = j
+            out.extend(extra)
         return out
     except Exception:
-        return [
-            {"id": 1, "question": "What is the main topic of the document?", "options": ["A","B","C","D"], "correct_answer": 0, "type": "multiple_choice"}
-        ]
+        # Fallback to non-LLM MCQ generator using the actual text so it stays relevant
+        return _simple_mcq_from_text(text, num_questions)
